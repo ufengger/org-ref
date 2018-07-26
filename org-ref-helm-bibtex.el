@@ -77,7 +77,7 @@
     ("Edit notes" . helm-bibtex-edit-notes)
     ("Show entry" . helm-bibtex-show-entry)
     ("Add keywords to entries" . org-ref-helm-tag-entries)
-    ("Copy entry to clipboard" . bibtex-completion-copy-candidate) 
+    ("Copy entry to clipboard" . bibtex-completion-copy-candidate)
     ("Add PDF to library" . helm-bibtex-add-pdf-to-library))
   "Cons cells of string and function to set the actions of `helm-bibtex' to.
 The car of cons cell is the string describing the function.
@@ -86,14 +86,14 @@ The cdr of the the cons cell is the function to use."
   :group 'org-ref)
 
 
-(cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
-	 for ccell in org-ref-bibtex-completion-actions
-	 do
-	 (helm-delete-action-from-source (car ccell) helm-source-bibtex)
-	 (helm-add-action-to-source
-	  (car ccell)
-	  (cdr ccell)
-	  helm-source-bibtex))
+;; (cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
+;; 	 for ccell in org-ref-bibtex-completion-actions
+;; 	 do
+;; 	 (helm-delete-action-from-source (car ccell) helm-source-bibtex)
+;; 	 (helm-add-action-to-source
+;; 	  (car ccell)
+;; 	  (cdr ccell)
+;; 	  helm-source-bibtex))
 
 
 (defcustom org-ref-bibtex-completion-format-org
@@ -400,7 +400,16 @@ With two prefix ARGs, insert a label link."
   (org-ref-save-all-bibtex-buffers)
   (cond
    ((equal arg nil)
-    (let ((bibtex-completion-bibliography (org-ref-find-bibliography)))
+    (let ((bibtex-completion-bibliography (org-ref-find-bibliography))
+	  (helm-source-bibtex helm-source-bibtex))
+      (cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
+	       for ccell in org-ref-bibtex-completion-actions
+	       do
+	       (helm-delete-action-from-source (car ccell) helm-source-bibtex)
+	       (helm-add-action-to-source
+		(car ccell)
+		(cdr ccell)
+		helm-source-bibtex))
       (helm-bibtex)))
    ((equal arg '(4))
     (org-ref-helm-insert-ref-link))
