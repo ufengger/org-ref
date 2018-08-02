@@ -86,14 +86,43 @@ The cdr of the the cons cell is the function to use."
   :group 'org-ref)
 
 
-(cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
-	 for ccell in org-ref-bibtex-completion-actions
-	 do
-	 (helm-delete-action-from-source (car ccell) helm-source-bibtex)
-	 (helm-add-action-to-source
-	  (car ccell)
-	  (cdr ccell)
-	  helm-source-bibtex))
+(defcustom org-ref-helm-bibtex-action-preference
+  'org-ref
+  "Sets the user preference on how org-ref modifies the helm-bibtex actions.
+
+When using org-ref, it is a strong opinion of mine that the
+default action should be to insert a citation because that is the
+main thing I use it for. That is not the default action of
+helm-bibtex though. On the other hand, there are other reasons
+one might want to use helm-bibtex outside of org-mode, e.g. to
+open pdfs, etc, and it is reasonable if you do that a lot to want
+open the pdf to be the default action. This variable makes it
+more flexible for users to get the behavior they want.
+
+This variable should be a symbol with one of the following
+values:
+
+'org-ref - Let org-ref modify the helm-bibtex actions globally,
+so that helm-bibtex is always the same in every context.
+
+'vanilla - Does not modify the actions at all, so helm-bibtex
+actions are the same globally as they are when it is installed.
+
+'mixed - modify the actions when called from org-ref, but do not
+modify the actions when helm-bibtex is called externally."
+  :type 'symbol
+  :group 'org-ref)
+
+
+(when (eq 'org-ref org-ref-helm-bibtex-action-preference)
+  (cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
+	   for ccell in org-ref-bibtex-completion-actions
+	   do
+	   (helm-delete-action-from-source (car ccell) helm-source-bibtex)
+	   (helm-add-action-to-source
+	    (car ccell)
+	    (cdr ccell)
+	    helm-source-bibtex)))
 
 
 (defcustom org-ref-bibtex-completion-format-org
@@ -396,7 +425,17 @@ With two prefix ARGs, insert a label link."
   (org-ref-save-all-bibtex-buffers)
   (cond
    ((equal arg nil)
-    (let ((bibtex-completion-bibliography (org-ref-find-bibliography)))
+    (let ((bibtex-completion-bibliography (org-ref-find-bibliography))
+	  (helm-source-bibtex helm-source-bibtex))
+      (when (eq 'mixed org-ref-helm-bibtex-action-preference)
+	(cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
+		 for ccell in org-ref-bibtex-completion-actions
+		 do
+		 (helm-delete-action-from-source (car ccell) helm-source-bibtex)
+		 (helm-add-action-to-source
+		  (car ccell)
+		  (cdr ccell)
+		  helm-source-bibtex)))
       (helm-bibtex)))
    ((equal arg '(4))
     (org-ref-helm-insert-ref-link))
