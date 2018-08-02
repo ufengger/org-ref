@@ -118,10 +118,6 @@ take effect."
 
 
 (when (eq 'org-ref org-ref-helm-bibtex-action-preference)
-
-  (setq bibtex-completion-additional-search-fields '(keywords)
-	bibtex-completion-display-formats '((t . "${author:36} ${title:*} ${year:4} ${=has-pdf=:1}${=has-note=:1} ${=type=:7} ${keywords:31}")))
-
   (cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
 	   for ccell in org-ref-bibtex-completion-actions
 	   do
@@ -433,12 +429,8 @@ With two prefix ARGs, insert a label link."
   (cond
    ((equal arg nil)
     (let ((bibtex-completion-bibliography (org-ref-find-bibliography))
-	  (helm-source-bibtex helm-source-bibtex)
-	  (bibtex-completion-additional-search-fields bibtex-completion-additional-search-fields)
-	  (bibtex-completion-display-formats bibtex-completion-display-formats))
+	  (helm-source-bibtex helm-source-bibtex))
       (when (eq 'mixed org-ref-helm-bibtex-action-preference)
-	(setq bibtex-completion-additional-search-fields '(keywords)
-	      bibtex-completion-display-formats '((t . "${author:36} ${title:*} ${year:4} ${=has-pdf=:1}${=has-note=:1} ${=type=:7} ${keywords:31}")))
 	(cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
 		 for ccell in org-ref-bibtex-completion-actions
 		 do
