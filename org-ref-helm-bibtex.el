@@ -109,12 +109,19 @@ so that helm-bibtex is always the same in every context.
 actions are the same globally as they are when it is installed.
 
 'mixed - modify the actions when called from org-ref, but do not
-modify the actions when helm-bibtex is called externally."
+modify the actions when helm-bibtex is called externally.
+
+Note: you have to restart Emacs for changes to this variable to
+take effect."
   :type 'symbol
   :group 'org-ref)
 
 
 (when (eq 'org-ref org-ref-helm-bibtex-action-preference)
+
+  (setq bibtex-completion-additional-search-fields '(keywords)
+	bibtex-completion-display-formats '((t . "${author:36} ${title:*} ${year:4} ${=has-pdf=:1}${=has-note=:1} ${=type=:7} ${keywords:31}")))
+
   (cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
 	   for ccell in org-ref-bibtex-completion-actions
 	   do
@@ -141,10 +148,6 @@ modify the actions when helm-bibtex is called externally."
 
 
 ;;* Helm bibtex setup.
-(setq bibtex-completion-additional-search-fields '(keywords))
-
-(setq bibtex-completion-display-formats
-      '((t . "${author:36} ${title:*} ${year:4} ${=has-pdf=:1}${=has-note=:1} ${=type=:7} ${keywords:31}")))
 
 (defun bibtex-completion-copy-candidate (_candidate)
   "Copy the selected bibtex entries to the clipboard.
@@ -430,8 +433,12 @@ With two prefix ARGs, insert a label link."
   (cond
    ((equal arg nil)
     (let ((bibtex-completion-bibliography (org-ref-find-bibliography))
-	  (helm-source-bibtex helm-source-bibtex))
+	  (helm-source-bibtex helm-source-bibtex)
+	  (bibtex-completion-additional-search-fields bibtex-completion-additional-search-fields)
+	  (bibtex-completion-display-formats bibtex-completion-display-formats))
       (when (eq 'mixed org-ref-helm-bibtex-action-preference)
+	(setq bibtex-completion-additional-search-fields '(keywords)
+	      bibtex-completion-display-formats '((t . "${author:36} ${title:*} ${year:4} ${=has-pdf=:1}${=has-note=:1} ${=type=:7} ${keywords:31}")))
 	(cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
 		 for ccell in org-ref-bibtex-completion-actions
 		 do
