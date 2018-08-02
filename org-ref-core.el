@@ -628,9 +628,11 @@ If so return the position for `goto-char'."
   (concat "\\(" (mapconcat
                  (lambda (x)
 		   (replace-regexp-in-string "\*" "\\\\*" x))
-                 org-ref-cite-types "\\|") ":\\)"
+                 org-ref-cite-types "\\|") "\\):"
                  "\\([a-zA-Z0-9-_:\\./]+,?\\)+")
-  "Regexp for cite links.")
+  "Regexp for cite links.
+Group 1 contains the cite type.
+Group 2 contains the keys.")
 
 
 (defvar org-ref-label-re
@@ -909,7 +911,8 @@ we open it, otherwise prompt for which one to open."
   "Find BIBFILE as local file, or using kpsewhich or bibinputs."
   (or (if (file-exists-p bibfile) bibfile)
       (org-ref-bibfile-kpsewhich bibfile)
-      ;; this should never be reached because kpsewhich is stronger
+      ;; this should never be reached if bibfile exists, because kpsewhich is
+      ;; stronger
       (org-ref-locate-file bibfile (org-ref-bibinputs))))
 
 
@@ -968,8 +971,10 @@ PREDICATE."
 	;; save the key we clicked on.
 	(setq bibfile (org-ref-strip-string
 		       (buffer-substring key-beginning key-end)))
-	;; open file on click
-        (find-file (org-ref-find-bibfile bibfile))))))
+	;; open file on click. I use or because org-ref-find-bibfile returns nil
+	;; if the file doesn't exist, and clicking should open the file in that
+	;; case.
+        (find-file (or (org-ref-find-bibfile bibfile) bibfile))))))
 
 
 (defun org-ref-bibliography-format (keyword desc format)
@@ -3204,90 +3209,92 @@ move to the beginning of the previous cite link after this one."
 (defun org-ref-get-label-context (label)
   "Return a string of context around a LABEL."
   (save-excursion
-    (catch 'result
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "label:%s\\b" label) nil t)
-        (throw 'result (buffer-substring
-                        (progn
-                          (forward-line -1)
-                          (beginning-of-line)
-                          (point))
-                        (progn
-                          (forward-line 4)
-                          (point)))))
+    (save-restriction
+      (widen)
+      (catch 'result
+	(goto-char (point-min))
+	(when (re-search-forward
+	       (format "label:%s\\b" label) nil t)
+	  (throw 'result (buffer-substring
+			  (progn
+			    (forward-line -1)
+			    (beginning-of-line)
+			    (point))
+			  (progn
+			    (forward-line 4)
+			    (point)))))
 
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "\\label{%s}" label) nil t)
-        (throw 'result (buffer-substring
-                        (progn
-                          (forward-line -1)
-                          (beginning-of-line)
-                          (point))
-                        (progn
-                          (forward-line 4)
-                          (point)))))
+	(goto-char (point-min))
+	(when (re-search-forward
+	       (format "\\label{%s}" label) nil t)
+	  (throw 'result (buffer-substring
+			  (progn
+			    (forward-line -1)
+			    (beginning-of-line)
+			    (point))
+			  (progn
+			    (forward-line 4)
+			    (point)))))
 
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "^\\( \\)*#\\+label:\\s-*\\(%s\\)\\b" label) nil t)
-        (throw 'result (buffer-substring
-                        (progn
-                          (forward-line -1)
-                          (beginning-of-line)
-                          (point))
-                        (progn
-                          (forward-line 4)
-                          (point)))))
+	(goto-char (point-min))
+	(when (re-search-forward
+	       (format "^\\( \\)*#\\+label:\\s-*\\(%s\\)\\b" label) nil t)
+	  (throw 'result (buffer-substring
+			  (progn
+			    (forward-line -1)
+			    (beginning-of-line)
+			    (point))
+			  (progn
+			    (forward-line 4)
+			    (point)))))
 
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "^\\( \\)*#\\+tblname:\\s-*\\(%s\\)\\b" label) nil t)
-        (throw 'result (buffer-substring
-                        (progn
-                          (forward-line -1)
-                          (beginning-of-line)
-                          (point))
-                        (progn
-                          (forward-line 4)
-                          (point)))))
+	(goto-char (point-min))
+	(when (re-search-forward
+	       (format "^\\( \\)*#\\+tblname:\\s-*\\(%s\\)\\b" label) nil t)
+	  (throw 'result (buffer-substring
+			  (progn
+			    (forward-line -1)
+			    (beginning-of-line)
+			    (point))
+			  (progn
+			    (forward-line 4)
+			    (point)))))
 
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "^\\( \\)*#\\+name:\\s-*\\(%s\\)\\b" label) nil t)
-        (throw 'result (buffer-substring
-                        (progn
-                          (forward-line -1)
-                          (beginning-of-line)
-                          (point))
-                        (progn
-                          (forward-line 4)
-                          (point)))))
-      ;; ;; CUSTOM_ID
-      (goto-char (point-min))
-      ;; do we have a CUSTOM-ID?
-      (let ((heading (org-map-entries
-		      (lambda ()
-			(buffer-substring
-			 (progn
-			   (forward-line -1)
-			   (beginning-of-line)
-			   (point))
-			 (progn
-			   (forward-line 4)
-			   (point))))
-		      (format  "CUSTOM_ID=\"%s\"" label))))
-	;; (message-box heading)
-	(when heading
-	  (throw 'result (car heading))))
-      ;; radio target
-      (goto-char (point-min))
-      (when (re-search-forward (format "<<%s>>" (regexp-quote label)) nil t)
-	(throw 'result (match-string 0)))
+	(goto-char (point-min))
+	(when (re-search-forward
+	       (format "^\\( \\)*#\\+name:\\s-*\\(%s\\)\\b" label) nil t)
+	  (throw 'result (buffer-substring
+			  (progn
+			    (forward-line -1)
+			    (beginning-of-line)
+			    (point))
+			  (progn
+			    (forward-line 4)
+			    (point)))))
+	;; ;; CUSTOM_ID
+	(goto-char (point-min))
+	;; do we have a CUSTOM-ID?
+	(let ((heading (org-map-entries
+			(lambda ()
+			  (buffer-substring
+			   (progn
+			     (forward-line -1)
+			     (beginning-of-line)
+			     (point))
+			   (progn
+			     (forward-line 4)
+			     (point))))
+			(format  "CUSTOM_ID=\"%s\"" label))))
+	  ;; (message-box heading)
+	  (when heading
+	    (throw 'result (car heading))))
+	;; radio target
+	(goto-char (point-min))
+	(when (re-search-forward (format "<<%s>>" (regexp-quote label)) nil t)
+	  (throw 'result (match-string 0)))
 
 
-      (throw 'result "!!! NO CONTEXT FOUND !!!"))))
+	(throw 'result "!!! NO CONTEXT FOUND !!!")))))
 
 
 ;;;###autoload
@@ -3388,7 +3395,7 @@ move to the beginning of the previous cite link after this one."
                          (buffer-substring key-beginning key-end)))
                   (let ((file (org-ref-find-bibfile bibfile)))
                     (message (if file "%s exists." "!!! %s NOT FOUND !!!")
-                             file))))))))))))
+                             (or file bibfile)))))))))))))
 
 ;;** aliases
 (defalias 'oro 'org-ref-open-citation-at-point)
