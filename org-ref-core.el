@@ -123,7 +123,7 @@ Put a trailing / in the name."
 
 
 (defcustom org-ref-completion-library
-  'org-ref-helm-bibtex
+  'org-ref-ivy-cite
   "Symbol for library to define completion functions.
 The completion library should provide functions for
 `org-ref-insert-link-function', `org-ref-insert-cite-function',
